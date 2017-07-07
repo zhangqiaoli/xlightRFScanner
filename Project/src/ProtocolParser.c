@@ -48,23 +48,39 @@ uint8_t ParseProtocol(){
   return 0;
 }
 
-// Prepare NCF query ack message
-void Msg_NodeConfigData(uint8_t _to) {
-  uint8_t payl_len = 0;
-  build(_to, NCF_QUERY, C_INTERNAL, I_CONFIG, 0, 1);
+// Prepare Probe message
+void Msg_ProbeMsg() {
+  build(NODEID_DUMMY, 0x00, C_INTERNAL, I_GET_NONCE, 1, 0);
+  sndMsg.payload.data[0] = SCANNER_PROBE;
+  moSetLength(1);
+  moSetPayloadType(P_BYTE);
+  bMsgReady = 1;
+}
 
-  sndMsg.payload.data[payl_len++] = gConfig.version;
-//  sndMsg.payload.data[payl_len++] = gConfig.subID;
-  sndMsg.payload.data[payl_len++] = gConfig.type;
-//  sndMsg.payload.data[payl_len++] = gConfig.senMap % 256;
-//  sndMsg.payload.data[payl_len++] = gConfig.senMap / 256;
-  sndMsg.payload.data[payl_len++] = gConfig.rptTimes;
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
-  sndMsg.payload.data[payl_len++] = 0;     // Reservered
+void Msg_NodeScanMsg(const uint8_t _subType, const uint8_t _nodeID, const uint8_t _subID) {
+  uint8_t payl_len = 0;
+  build(_nodeID, 0x00, C_INTERNAL, I_GET_NONCE, 1, 0);
+
+  sndMsg.payload.data[payl_len++] = _subType;
+  sndMsg.payload.data[payl_len++] = _nodeID;
+  sndMsg.payload.data[payl_len++] = _subID;
+  
+  switch( _subType ) {
+  case SCANNER_SETUP_RF:
+    // ToDo: set setup parameters
+    //...
+    break;
+    
+  case SCANNER_GETCONFIG:
+    // ToDo: set query parameters
+    //...
+    break;
+
+  case SCANNER_TEST_NODE:
+    // ToDo: set test parameters
+    //...
+    break;
+  }
   
   moSetLength(payl_len);
   moSetPayloadType(P_CUSTOM);

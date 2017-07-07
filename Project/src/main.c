@@ -55,6 +55,10 @@ Connections:
 #define SYS_PAUSE                       4
 #define SYS_RUNNING                     5
 
+// Timeout
+#define RTE_TM_SCAN_UNIT                200   // about 2s (200 * 10ms)
+#define RTE_PROBE_PER_SCAN              3     // How many probes
+
 // Unique ID
 #if defined(STM8S105) || defined(STM8S005) || defined(STM8AF626x)
   #define     UNIQUE_ID_ADDRESS         (0x48CD)
@@ -74,6 +78,7 @@ bool gIsChanged = FALSE;
 uint8_t _uniqueID[UNIQUE_ID_LEN];
 
 // Moudle variables
+uint16_t mTimerScan = 0;
 uint8_t mStatus = SYS_INIT;
 uint8_t mutex = 0;
 
@@ -182,7 +187,7 @@ void LoadConfig()
 {
     // Load the most recent settings from FLASH
     Flash_ReadBuf(FLASH_DATA_START_PHYSICAL_ADDRESS, (uint8_t *)&gConfig, sizeof(gConfig));
-    if( gConfig.version > XLA_VERSION || gConfig.rfPowerLevel > RF24_PA_MAX || gConfig.nodeID != XLA_PRODUCT_NODEID || gConfig.rfChannel > 127 || gConfig.rfDataRate > 2) {
+    if( gConfig.version > XLA_VERSION || gConfig.rfPowerLevel > RF24_PA_MAX || gConfig.nodeID != XLA_PRODUCT_NODEID || gConfig.rfChannel > 127 || gConfig.rfDataRate > 2 ) {
       memset(&gConfig, 0x00, sizeof(gConfig));
       gConfig.version = XLA_VERSION;
       InitNodeAddress();
@@ -192,7 +197,7 @@ void LoadConfig()
       //sprintf(gConfig.ProductName, "%s", XLA_PRODUCT_NAME);
       gConfig.rfChannel = RF24_CHANNEL;
       gConfig.rfPowerLevel = RF24_PA_MAX;
-      gConfig.rfDataRate = 0;
+      gConfig.rfDataRate = RF24_1MBPS;
     }
     
     // Engineering code
@@ -202,7 +207,7 @@ void UpdateNodeAddress(void) {
   memcpy(rx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
   rx_addr[0] = gConfig.nodeID;
   memcpy(tx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
-  tx_addr[0] = (isNodeIdRequired() ? BASESERVICE_ADDRESS : NODEID_GATEWAY);
+  tx_addr[0] = BROADCAST_ADDRESS;
   RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, 1);
 }
 
@@ -251,17 +256,16 @@ bool startScan() {
     stopScan();
   }
   
-  // ToDo: start scanning
-  //...
-  
+  // start scanning
+  mTimerScan = RTE_TM_SCAN_UNIT;  
   ChangeStatus(SYS_RUNNING);
   return TRUE;
 }
 
 bool stopScan() {
   if( mStatus == SYS_RUNNING || mStatus == SYS_PAUSE ) {
-    // ToDo: stop scanning
-    //...
+    // stop scanning
+    mTimerScan = 0;
     ChangeStatus(SYS_WAIT_COMMAND);
     return TRUE;
   }
@@ -271,8 +275,7 @@ bool stopScan() {
 
 bool pauseScan() {
   if( mStatus == SYS_RUNNING ) {
-    // ToDo: pause scanning
-    //...
+    // pause scanning
     ChangeStatus(SYS_PAUSE);
     return TRUE;
   }
@@ -282,8 +285,7 @@ bool pauseScan() {
 
 bool resumeScan() {
   if( mStatus == SYS_PAUSE ) {
-    // ToDo: resume scanning
-    //...
+    // resume scanning
     ChangeStatus(SYS_RUNNING);
     return TRUE;
   }
@@ -336,8 +338,7 @@ int main( void ) {
     
     // Feed the Watchdog
     feed_wwdg();
-    
-    
+        
     // Send message if ready
     SendMyMessage();
     
@@ -349,6 +350,24 @@ int main( void ) {
 // Execute timer operations
 void tmrProcess() {
   // Tick
+  if( mStatus == SYS_RUNNING ) {
+    if( mTimerScan > 0 ) {
+      if( mTimerScan == 1 ) {
+        // Finish scanning
+        stopScan();
+        return;
+      } else if( mTimerScan == RTE_TM_SCAN_UNIT ) {
+        // Setup RF for new scan
+        UpdateNodeAddress();
+      }
+      
+      if(mTimerScan % (RTE_TM_SCAN_UNIT / RTE_PROBE_PER_SCAN) == 0) {
+        // Send probe message
+        Msg_ProbeMsg();
+      }
+      mTimerScan--;
+    }
+  }
 }
 
 INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5) {

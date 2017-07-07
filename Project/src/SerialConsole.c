@@ -1,4 +1,5 @@
 #include "_global.h"
+#include "MyMessage.h"
 #include "SerialConsole.h"
 
 bool ProcessSerialMessage(const uint8_t *pBuf, const uint8_t nLen) {
@@ -13,6 +14,11 @@ bool ProcessSerialMessage(const uint8_t *pBuf, const uint8_t nLen) {
   uint8_t cmdType = pBuf[0];
   switch( cmdType ) {
   case 'a':              // start
+    // Read parameters from message
+    //memcpy(gConfig.NetworkID, ..., sizeof(gConfig.NetworkID));
+    gConfig.rfChannel = 71;
+    gConfig.rfDataRate = RF24_1MBPS;
+    gConfig.rfPowerLevel = RF24_PA_MAX;
     startScan();
     break;
   case 'b':              // stop
