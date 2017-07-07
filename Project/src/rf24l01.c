@@ -1,5 +1,5 @@
 #include "rf24l01.h"
-//#include "stdio.h"
+#include "MyMessage.h"
 #include <stm8s_spi.h>
 #include <stm8s_gpio.h>
 
@@ -199,10 +199,10 @@ void RF24L01_setup(uint8_t channel, uint8_t datarate, uint8_t powerlevel, uint8_
   *((uint8_t *)&RF_SETUP) = 0;
   RF_SETUP.RF_PWR = powerlevel;   // 01: Low. 03: Max
   // '00' is 1Mbs, '01' is 2Mbs, '10' is 250Kbs
-  if( datarate == 2 ) {
+  if( datarate == RF24_250KBPS ) {
     RF_SETUP.RF_DR_LOW = 0x01;
     RF_SETUP.RF_DR_HIGH = 0x00;
-  } else if( datarate == 1 ) {
+  } else if( datarate == RF24_2MBPS ) {
     RF_SETUP.RF_DR_LOW = 0x00;
     RF_SETUP.RF_DR_HIGH = 0x01;
   } else {

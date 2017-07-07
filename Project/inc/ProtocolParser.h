@@ -7,6 +7,7 @@ extern uint8_t bMsgReady;
 
 uint8_t ParseProtocol();
 void build(uint8_t _destination, uint8_t _sensor, uint8_t _command, uint8_t _type, bool _enableAck, bool _isAck);
-void Msg_NodeConfigData(uint8_t _to);
+void Msg_ProbeMsg();
+void Msg_NodeScanMsg(const uint8_t _subType, const uint8_t _nodeID, const uint8_t _subID);
 
 #endif /* __PROTOCOL_PARSER_H */
