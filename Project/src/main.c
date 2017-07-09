@@ -1,8 +1,10 @@
 #include "_global.h"
 #include "rf24l01.h"
 #include "MyMessage.h"
+#include "MyMessageQueue.h"
 #include "xliNodeConfig.h"
 #include "ProtocolParser.h"
+#include "SerialConsole.h"
 #include "Uart2Dev.h"
 #include "timer_4.h"
 
@@ -59,6 +61,10 @@ Connections:
 #define RTE_TM_SCAN_UNIT                200   // about 2s (200 * 10ms)
 #define RTE_PROBE_PER_SCAN              3     // How many probes
 
+// MMQ Attributes
+#define MAX_LEN_RMMQ                    10    // Max. length of received MMQ
+#define RTE_TM_RMMQ_ITEM                80    // Timeout of received MMQ item, about 800ms (80 * 10ms)
+
 // Unique ID
 #if defined(STM8S105) || defined(STM8S005) || defined(STM8AF626x)
   #define     UNIQUE_ID_ADDRESS         (0x48CD)
@@ -76,6 +82,7 @@ uint8_t *psndMsg = (uint8_t *)&sndMsg;
 uint8_t *prcvMsg = (uint8_t *)&rcvMsg;
 bool gIsChanged = FALSE;
 uint8_t _uniqueID[UNIQUE_ID_LEN];
+MMQ_Queue_t rfReceivedMQ;
 
 // Moudle variables
 uint16_t mTimerScan = 0;
@@ -249,6 +256,47 @@ bool SendMyMessage() {
   return(mutex > 0);
 }
 
+// Process one message at a time
+bool ProcessRecvMMQ() {
+  if( rfReceivedMQ.length > 0 && !rfReceivedMQ.locked ) {
+    PMQNode pNode = rfReceivedMQ.pHead;
+    rfReceivedMQ.locked = TRUE;
+    while( pNode != 0 && pNode != rfReceivedMQ.pTail )
+    {
+      // Parse message
+      if( pNode->ttl < RTE_TM_RMMQ_ITEM ) {
+        // Transfer message to serial port
+        SendSerialMessage(pNode->data, MAX_MESSAGE_LENGTH);        
+        // Change TTL to make the packet as finished
+        pNode->ttl = RTE_TM_RMMQ_ITEM;
+        break;
+      }
+      pNode = pNode->pNext;
+    }
+    rfReceivedMQ.locked = FALSE;     
+  }
+  return FALSE;
+}
+
+void Check_TTL_RecvMMQ() {
+  if( rfReceivedMQ.length > 0 && !rfReceivedMQ.locked ) {
+    PMQNode pNode = rfReceivedMQ.pHead;
+    PMQNode pTempNode;
+    while( pNode != 0 && pNode != rfReceivedMQ.pTail )
+    {
+      if( ++pNode->ttl >= RTE_TM_RMMQ_ITEM ) {
+        // Remove it
+        /// notes: do we need to remove all packets of the same series???
+        pTempNode = pNode;
+        pNode = pNode->pNext;
+        MMQ_RemoveMessage(&rfReceivedMQ, pTempNode);
+      } else {
+        pNode = pNode->pNext;
+      }
+    }    
+  }
+}
+
 bool startScan() {
   // stop previous scan
   stopScan();
@@ -304,6 +352,12 @@ int main( void ) {
   Read_UniqueID(_uniqueID, UNIQUE_ID_LEN);
   LoadConfig();
 
+  // Init MQ
+  rfReceivedMQ.locked = 0;
+  rfReceivedMQ.length = 0;
+  rfReceivedMQ.maxLen = 0;
+  MMQ_InitQueue(&rfReceivedMQ, MAX_LEN_RMMQ);
+  
   // Init Watchdog
   wwdg_init();
 
@@ -342,6 +396,9 @@ int main( void ) {
     // Send message if ready
     SendMyMessage();
     
+    // Process received message
+    ProcessRecvMMQ();
+    
     // Save Config if Changed
     SaveConfig();    
   }
@@ -368,6 +425,9 @@ void tmrProcess() {
       mTimerScan--;
     }
   }
+  
+  // Check TTL
+  Check_TTL_RecvMMQ();  
 }
 
 INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5) {

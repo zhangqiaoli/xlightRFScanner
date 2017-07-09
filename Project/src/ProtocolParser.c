@@ -1,9 +1,12 @@
 #include "ProtocolParser.h"
 #include "_global.h"
 #include "MyMessage.h"
+#include "MyMessageQueue.h"
 #include "xliNodeConfig.h"
 
 uint8_t bMsgReady = 0;
+
+extern MMQ_Queue_t rfReceivedMQ;
 
 // Assemble message
 void build(uint8_t _destination, uint8_t _sensor, uint8_t _command, uint8_t _type, bool _enableAck, bool _isAck)
@@ -35,6 +38,8 @@ uint8_t ParseProtocol(){
   case C_INTERNAL:
     if( _type == I_CONFIG ) {
     } else if( _type == I_GET_NONCE_RESPONSE ) {
+      // Put message in MQ
+      MMQ_AddMessage(&rfReceivedMQ, (const u8 *)&rcvMsg);
     }
     break;
     
