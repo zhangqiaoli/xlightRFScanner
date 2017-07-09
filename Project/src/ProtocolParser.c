@@ -62,6 +62,11 @@ void Msg_ProbeMsg() {
   bMsgReady = 1;
 }
 
+void Msg_TransferMsg(const uint8_t *pBuf, const uint8_t nLen) {
+  memcpy((u8 *)&sndMsg, pBuf, nLen);
+  bMsgReady = 1;
+}
+
 void Msg_NodeScanMsg(const uint8_t _subType, const uint8_t _nodeID, const uint8_t _subID) {
   uint8_t payl_len = 0;
   build(_nodeID, 0x00, C_INTERNAL, I_GET_NONCE, 1, 0);
