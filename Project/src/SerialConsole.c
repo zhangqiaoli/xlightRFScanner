@@ -1,5 +1,6 @@
 #include "_global.h"
 #include "MyMessage.h"
+#include "ProtocolParser.h"
 #include "SerialConsole.h"
 #include "Uart2Dev.h"
 
@@ -22,7 +23,7 @@ bool ProcessSerialMessage(const uint8_t *pBuf, const uint8_t nLen) {
   uint8_t cmdLen = pBuf[0];
   uint8_t cmdType = pBuf[1];
   switch( cmdType ) {
-  case 'a':              // start
+  case RFS_CMD_SCAN_START:              // start
     // Read parameters from message
     // ToDo:...
     //memcpy(gConfig.NetworkID, ..., sizeof(gConfig.NetworkID));
@@ -31,14 +32,19 @@ bool ProcessSerialMessage(const uint8_t *pBuf, const uint8_t nLen) {
     gConfig.rfPowerLevel = RF24_PA_MAX;
     startScan();
     break;
-  case 'b':              // stop
+  case RFS_CMD_SCAN_STOP:              // stop
     stopScan();
     break;
-  case 'c':              // pause
+  case RFS_CMD_SCAN_PAUSE:             // pause
     pauseScan();
     break;
-  case 'd':              // resume
+  case RFS_CMD_SCAN_RESUME:            // resume
     resumeScan();
+    break;
+    
+  default:
+    // Transfer transparently (length should be MAX_MESSAGE_LENGTH)
+    Msg_TransferMsg(pBuf + 1, cmdLen - 1);
     break;
   }
   
