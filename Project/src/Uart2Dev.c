@@ -99,8 +99,8 @@ INTERRUPT_HANDLER(UART2_RX_IRQHandler, 21)
         uart_step = UART_STEP_WAIT_HEAD_0;
       }
       break;
-    case UART_STEP_WAIT_PAYL:
-      uartReceiveDataBuf[uartDataPtr++] = data;
+    case UART_STEP_WAIT_PAYL:   
+      uartReceiveDataBuf[uartDataPtr++] = data;    
       if( uartDataPtr == uartReceiveDataBuf[0] ) uart_step = UART_STEP_WAIT_CHECKSUM0;
       break;
     case UART_STEP_WAIT_CHECKSUM0:
@@ -122,8 +122,7 @@ INTERRUPT_HANDLER(UART2_RX_IRQHandler, 21)
     }
     
     // Echo back
-    //Uart2SendByte(data);
-
+    // Uart2SendByte(data);
     UART2_ClearITPendingBit(UART2_IT_RXNE);
   }
 }
