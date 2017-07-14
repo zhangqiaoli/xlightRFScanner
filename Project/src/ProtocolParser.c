@@ -1,7 +1,6 @@
 #include "ProtocolParser.h"
 #include "_global.h"
 #include "MyMessage.h"
-#include "MyMessageQueue.h"
 #include "xliNodeConfig.h"
 
 uint8_t bMsgReady = 0;
@@ -37,7 +36,6 @@ uint8_t ParseProtocol(){
     if( _type == I_CONFIG ) {
     } else if( _type == I_GET_NONCE_RESPONSE ) {
       // transfer data
-      // MMQ_AddMessage(&rfReceivedMQ, (const u8 *)&rcvMsg);
       AddSerialOutputBuf((const u8 *)&rcvMsg);
     }
     break;
