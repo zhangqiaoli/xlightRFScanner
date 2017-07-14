@@ -176,7 +176,22 @@ void SerialSendLog(const uint8_t level, const char *pText) {
   char pBuf[MAX_UART_BUF_SIZE];
   memset(pBuf, 0x00, MAX_UART_BUF_SIZE);
   sprintf(pBuf, "RFS log_%d: %s\n\r", level, pText);
-  Uart2SendString((uint8_t *)pBuf);
+  //Uart2SendString((uint8_t *)pBuf);
+}
+
+#define STATUSRPT_LENGTH  9
+bool SendScanStatusReport() {
+  // send status report msg
+  MyMessage_t status_msg;
+  status_msg.header.last = RFS_RPT_SCAN_STATUS;
+  mSetLength(status_msg,STATUSRPT_LENGTH);
+  status_msg.payload.data[0] = gConfig.rfChannel;
+  status_msg.payload.data[1] = gConfig.rfDataRate;
+  status_msg.payload.data[2] = gConfig.rfPowerLevel; 
+  memcpy(&status_msg.payload.data[3],gConfig.NetworkID,5);
+  status_msg.payload.data[RFS_RPT_SCAN_STATUS-1] = mStatus;
+  SendSerialMessage((uint8_t *)(&status_msg),HEADER_SIZE + STATUSRPT_LENGTH);
+  return TRUE;
 }
 
 // Change status and inform PC via UART
@@ -186,7 +201,8 @@ void ChangeStatus(uint8_t _st) {
   char pBuf[MAX_UART_BUF_SIZE];
   memset(pBuf, 0x00, MAX_UART_BUF_SIZE);
   sprintf(pBuf, "RFS status changed to %d\n\r", _st);
-  Uart2SendString((uint8_t *)pBuf);
+  SendScanStatusReport();
+  //Uart2SendString((uint8_t *)pBuf);
 }
 
 // Load config from Flash
@@ -397,7 +413,8 @@ int main( void ) {
     SendMyMessage();
     
     // Process received message
-    ProcessRecvMMQ();
+    // ProcessRecvMMQ();
+    ProcessOutputSerialMsg();
     
     // Save Config if Changed
     SaveConfig();    
@@ -427,7 +444,7 @@ void tmrProcess() {
   }
   
   // Check TTL
-  Check_TTL_RecvMMQ();  
+  // Check_TTL_RecvMMQ();  
 }
 
 INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5) {

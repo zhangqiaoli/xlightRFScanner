@@ -8,5 +8,6 @@
 void uart2_config(uint32_t speed);
 uint8_t Usart2SendBuffer(uint8_t *pBuf, uint8_t ucLen);
 uint8_t Uart2SendString(uint8_t *pBuf);
+void Uart2SendByte(uint8_t data);
 
 #endif
