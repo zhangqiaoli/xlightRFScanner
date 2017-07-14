@@ -229,7 +229,7 @@ void UpdateNodeAddress(void) {
   rx_addr[0] = gConfig.nodeID;
   memcpy(tx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
   tx_addr[0] = BROADCAST_ADDRESS;
-  RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, 1);
+  RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, BROADCAST_ADDRESS);
 }
 
 bool WaitMutex(uint32_t _timeout) {
