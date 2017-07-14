@@ -122,7 +122,7 @@ INTERRUPT_HANDLER(UART2_RX_IRQHandler, 21)
     }
     
     // Echo back
-    //Uart2SendByte(data);
+    Uart2SendByte(data);
 
     UART2_ClearITPendingBit(UART2_IT_RXNE);
   }

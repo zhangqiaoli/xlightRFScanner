@@ -615,6 +615,10 @@
           <name>BICOMP</name>
           <file> 45</file>
         </tool>
+        <tool>
+          <name>ICCSTM8</name>
+          <file> 20</file>
+        </tool>
       </outputs>
       <inputs>
         <tool>
