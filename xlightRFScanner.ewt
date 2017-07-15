@@ -87,9 +87,6 @@
         <name>$PROJ_DIR$\Project\inc\MyMessage.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\Project\inc\MyMessageQueue.h</name>
-      </file>
-      <file>
         <name>$PROJ_DIR$\Project\inc\ProtocolParser.h</name>
       </file>
       <file>
@@ -118,9 +115,6 @@
       <name>src</name>
       <file>
         <name>$PROJ_DIR$\Project\src\main.c</name>
-      </file>
-      <file>
-        <name>$PROJ_DIR$\Project\src\MyMessageQueue.c</name>
       </file>
       <file>
         <name>$PROJ_DIR$\Project\src\ProtocolParser.c</name>

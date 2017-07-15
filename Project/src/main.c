@@ -1,7 +1,6 @@
 #include "_global.h"
 #include "rf24l01.h"
 #include "MyMessage.h"
-#include "MyMessageQueue.h"
 #include "xliNodeConfig.h"
 #include "ProtocolParser.h"
 #include "SerialConsole.h"
@@ -82,7 +81,6 @@ uint8_t *psndMsg = (uint8_t *)&sndMsg;
 uint8_t *prcvMsg = (uint8_t *)&rcvMsg;
 bool gIsChanged = FALSE;
 uint8_t _uniqueID[UNIQUE_ID_LEN];
-MMQ_Queue_t rfReceivedMQ;
 
 // Moudle variables
 uint16_t mTimerScan = 0;
@@ -231,7 +229,7 @@ void UpdateNodeAddress(void) {
   rx_addr[0] = gConfig.nodeID;
   memcpy(tx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
   tx_addr[0] = BROADCAST_ADDRESS;
-  RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, 1);
+  RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, BROADCAST_ADDRESS);
 }
 
 bool WaitMutex(uint32_t _timeout) {
@@ -270,47 +268,6 @@ bool SendMyMessage() {
   }
 
   return(mutex > 0);
-}
-
-// Process one message at a time
-bool ProcessRecvMMQ() {
-  if( rfReceivedMQ.length > 0 && !rfReceivedMQ.locked ) {
-    PMQNode pNode = rfReceivedMQ.pHead;
-    rfReceivedMQ.locked = TRUE;
-    while( pNode != 0 && pNode != rfReceivedMQ.pTail )
-    {
-      // Parse message
-      if( pNode->ttl < RTE_TM_RMMQ_ITEM ) {
-        // Transfer message to serial port
-        SendSerialMessage(pNode->data, MAX_MESSAGE_LENGTH);        
-        // Change TTL to make the packet as finished
-        pNode->ttl = RTE_TM_RMMQ_ITEM;
-        break;
-      }
-      pNode = pNode->pNext;
-    }
-    rfReceivedMQ.locked = FALSE;     
-  }
-  return FALSE;
-}
-
-void Check_TTL_RecvMMQ() {
-  if( rfReceivedMQ.length > 0 && !rfReceivedMQ.locked ) {
-    PMQNode pNode = rfReceivedMQ.pHead;
-    PMQNode pTempNode;
-    while( pNode != 0 && pNode != rfReceivedMQ.pTail )
-    {
-      if( ++pNode->ttl >= RTE_TM_RMMQ_ITEM ) {
-        // Remove it
-        /// notes: do we need to remove all packets of the same series???
-        pTempNode = pNode;
-        pNode = pNode->pNext;
-        MMQ_RemoveMessage(&rfReceivedMQ, pTempNode);
-      } else {
-        pNode = pNode->pNext;
-      }
-    }    
-  }
 }
 
 bool startScan() {
@@ -368,12 +325,6 @@ int main( void ) {
   Read_UniqueID(_uniqueID, UNIQUE_ID_LEN);
   LoadConfig();
 
-  // Init MQ
-  rfReceivedMQ.locked = 0;
-  rfReceivedMQ.length = 0;
-  rfReceivedMQ.maxLen = 0;
-  MMQ_InitQueue(&rfReceivedMQ, MAX_LEN_RMMQ);
-  
   // Init Watchdog
   wwdg_init();
 
@@ -413,7 +364,6 @@ int main( void ) {
     SendMyMessage();
     
     // Process received message
-    // ProcessRecvMMQ();
     ProcessOutputSerialMsg();
     
     // Save Config if Changed
@@ -442,9 +392,6 @@ void tmrProcess() {
       mTimerScan--;
     }
   }
-  
-  // Check TTL
-  // Check_TTL_RecvMMQ();  
 }
 
 INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5) {
