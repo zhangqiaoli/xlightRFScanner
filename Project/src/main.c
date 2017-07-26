@@ -228,7 +228,7 @@ void UpdateNodeAddress(void) {
   memcpy(rx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
   rx_addr[0] = gConfig.nodeID;
   memcpy(tx_addr, gConfig.NetworkID, ADDRESS_WIDTH);
-  tx_addr[0] = BROADCAST_ADDRESS;
+  //tx_addr[0] = BROADCAST_ADDRESS;
   RF24L01_setup(gConfig.rfChannel, gConfig.rfDataRate, gConfig.rfPowerLevel, BROADCAST_ADDRESS);
 }
 
