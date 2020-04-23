@@ -187,7 +187,7 @@ bool SendScanStatusReport() {
   status_msg.payload.data[1] = gConfig.rfDataRate;
   status_msg.payload.data[2] = gConfig.rfPowerLevel; 
   memcpy(&status_msg.payload.data[3],gConfig.NetworkID,5);
-  status_msg.payload.data[RFS_RPT_SCAN_STATUS-1] = mStatus;
+  status_msg.payload.data[STATUSRPT_LENGTH-1] = mStatus;
   SendSerialMessage((uint8_t *)(&status_msg),HEADER_SIZE + STATUSRPT_LENGTH);
   return TRUE;
 }
